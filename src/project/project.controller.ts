@@ -1,6 +1,6 @@
 import { Controller, Get, Req, Param, Post, Body, Delete, Put, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, raw, response } from 'express';
-import { CreateProjectDto, Project } from './project.create.dto'
+import { Project } from './project.create.dto'
 import { create } from 'domain';
 
 @Controller('api/project')
@@ -30,7 +30,7 @@ export class ProjectController {
     }
 
     @Post()
-    createProject(@Body() createProject: CreateProjectDto) {
+    createProject(@Body() createProject: Project ) {
 
         const newProject = new Project()
         newProject.Id = this.consumeNextId()
@@ -59,16 +59,13 @@ export class ProjectController {
 
     @Delete(':id')
     deleteProject(@Param('id') id: number) {
-        let deletingProject = false;
         for(let i = 0 ; i < this.projectsObject.length; i++) {
-            if (this.projectsObject[i].Id == id) {
-                deletingProject = this.projectsObject[i]
-                delete this.projectsObject[i]
+            const project = this.projectsObject[i]
+            if (project.Id == id) {
+                const index = this.projectsObject.indexOf(project)
+                this.projectsObject.splice(index, 1)
+                return project
             }
-        }
-        if (deletingProject) {
-            this.saveProjectsFile();
-            return deletingProject
         }
         throw new HttpException("Not Found", HttpStatus.NOT_FOUND)
     } 
@@ -93,7 +90,7 @@ export class ProjectController {
     }
 
     incrementNextId() {
-        this.nextIdBody.nextId++;
+        this.nextIdBody.nextProjectId++;
 
         var fs = require("fs")
         fs.writeFile("./data/nextId.json", JSON.stringify(this.nextIdBody), this.onNextIdSaved)
@@ -104,7 +101,7 @@ export class ProjectController {
     }
 
     consumeNextId() {
-        const nextId = this.nextIdBody.nextId
+        const nextId = this.nextIdBody.nextProjectId
         this.incrementNextId()
 
         return nextId
